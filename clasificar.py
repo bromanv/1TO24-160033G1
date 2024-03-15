@@ -1,30 +1,36 @@
+# -*- coding: utf-8 -*-
 from math import ceil
+
+import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
+from sklearn.preprocessing import LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
-import numpy as np
+
+from generar_graficos import generar_graficos
+
 
 def cargar_y_preparar_datos():
+    print("Cargar Datos")
     # Cargar los datos del banco
     bank_data = pd.read_csv('./bank-additional-full.csv', delimiter=';')
-
-    # Generar números aleatorios para la columna 'Cedula' y añadirlos al DataFrame
     cedula_column = np.random.randint(1000000000, 9999999999, size=len(bank_data))
     bank_data.insert(0, 'CEDULA', cedula_column)
 
-    # Convertir variables categóricas a numéricas, excluyendo la variable objetivo y 'CEDULA'
+    # Convertir variables categoricas a numéricas, excluyendo
+    # la variable objetivo y CEDULA
     label_encoders = {}
     for column in bank_data.columns:
         if column not in ['y', 'CEDULA'] and bank_data[column].dtype == 'object':
+        #if column in ['euribor3m','nr.employed','duration'] and bank_data[column].dtype == 'object':
             le = LabelEncoder()
             bank_data[column] = le.fit_transform(bank_data[column].astype(str))
             label_encoders[column] = le
 
     # Codificar la variable objetivo ('y') como binaria
     bank_data['y'] = bank_data['y'].map({'yes': 1, 'no': 0})
-
+    print("# Codificar la variable objetivo ('y') como binaria")
     return bank_data, label_encoders
 
 def seleccionar_caracteristicas_y_predecir(bank_data, label_encoders):
@@ -68,7 +74,6 @@ def clasificar_categoria(row):
     peso_euribor3m = 10  # Factor de ponderación para Euribor
     peso_nr_employed = 0.0019  # Coeficiente para número de empleados
     
-
     # Calcular puntuación compuesta
     puntuacion = 0
     puntuacion += row['duration'] * peso_duration
@@ -87,7 +92,9 @@ def clasificar_categoria(row):
         return 'cliente regular' #+str(puntuacion)
 
 def clasificar_clientes():
+    print("cargar y preparar Listos")
     bank_data, label_encoders = cargar_y_preparar_datos()
+    print("cargar y preparar datos listos")
     clientes_data_con_prediccion = seleccionar_caracteristicas_y_predecir(bank_data, label_encoders)
     # Aplicar la clasificación de categorías a clientes_data
     clientes_data_con_prediccion['categoria'] = clientes_data_con_prediccion.apply(clasificar_categoria, axis=1)
@@ -95,9 +102,12 @@ def clasificar_clientes():
     print("Clasificación de clientes en categorías:")
     # Contar la cantidad de clientes en cada categoría de predicción
     categorias_prediccion_contadas = clientes_data_con_prediccion['categoria'].value_counts()
-
+    generar_graficos(categorias_prediccion_contadas, bank_data)
+    
     print(categorias_prediccion_contadas)
-    print(clientes_data_con_prediccion[['CEDULA', 'categoria']])
+    print(clientes_data_con_prediccion[['CEDULA', 'categoria']])    
+    
 
 if __name__ == "__main__":
-    clasificar_clientes()
+  print("Clasificar.py")
+  clasificar_clientes()
